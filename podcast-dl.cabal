@@ -1,0 +1,120 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.31.1.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 1693e12045a9676068ec0782f266e181ccc6fa3c88661761b4c7a764e85972cd
+
+name:           podcast-dl
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/totbwf/podcast-dl#readme>
+homepage:       https://github.com/totbwf/podcast-dl#readme
+bug-reports:    https://github.com/totbwf/podcast-dl/issues
+author:         Reed Mullanix
+maintainer:     reedmullanix@gmail.com
+copyright:      2019 Reed Mullanix
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/totbwf/podcast-dl
+
+library
+  exposed-modules:
+      Entry
+      Episode
+      Lib
+      RSSFeeds
+  other-modules:
+      Paths_podcast_dl
+  hs-source-dirs:
+      src
+  build-depends:
+      async >=2 && <3
+    , base >=4.7 && <5
+    , brick >=0.46 && <0.50
+    , bytestring >=0.10 && <0.11
+    , conduit >=1 && <2
+    , conduit-extra >=1 && <2
+    , http-conduit >=2 && <3
+    , lens >=4 && <5
+    , mtl >=2 && <3
+    , process >=1 && <2
+    , resourcet >=1 && <2
+    , rss-conduit >=0.4 && <0.5
+    , text >=1 && <2
+    , transformers >=0.5 && <0.6
+    , unliftio >=0.2 && <0.3
+    , uri-bytestring >=0.3 && <0.4
+    , vector >=0.12 && <0.13
+    , vty >=5 && <6
+    , xml-conduit >=1 && <2
+  default-language: Haskell2010
+
+executable podcast-dl-exe
+  main-is: Main.hs
+  other-modules:
+      Widget.Tree
+      Paths_podcast_dl
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      async >=2 && <3
+    , base >=4.7 && <5
+    , brick >=0.46 && <0.50
+    , bytestring >=0.10 && <0.11
+    , conduit >=1 && <2
+    , conduit-extra >=1 && <2
+    , http-conduit >=2 && <3
+    , lens >=4 && <5
+    , mtl >=2 && <3
+    , podcast-dl
+    , process >=1 && <2
+    , resourcet >=1 && <2
+    , rss-conduit >=0.4 && <0.5
+    , text >=1 && <2
+    , transformers >=0.5 && <0.6
+    , unliftio >=0.2 && <0.3
+    , uri-bytestring >=0.3 && <0.4
+    , vector >=0.12 && <0.13
+    , vty >=5 && <6
+    , xml-conduit >=1 && <2
+  default-language: Haskell2010
+
+test-suite podcast-dl-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_podcast_dl
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      async >=2 && <3
+    , base >=4.7 && <5
+    , brick >=0.46 && <0.50
+    , bytestring >=0.10 && <0.11
+    , conduit >=1 && <2
+    , conduit-extra >=1 && <2
+    , http-conduit >=2 && <3
+    , lens >=4 && <5
+    , mtl >=2 && <3
+    , podcast-dl
+    , process >=1 && <2
+    , resourcet >=1 && <2
+    , rss-conduit >=0.4 && <0.5
+    , text >=1 && <2
+    , transformers >=0.5 && <0.6
+    , unliftio >=0.2 && <0.3
+    , uri-bytestring >=0.3 && <0.4
+    , vector >=0.12 && <0.13
+    , vty >=5 && <6
+    , xml-conduit >=1 && <2
+  default-language: Haskell2010
