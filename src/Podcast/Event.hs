@@ -27,11 +27,16 @@ import qualified Brick.BChan as BC
 import Podcast.Types
 
 class (Monad m) => MonadEvent m where
+  askChannel :: m (BChan Event)
+  default askChannel :: (MonadEvent m1, MonadTrans t, t m1 ~ m) => m (BChan Event)
+  askChannel = lift $ askChannel
+
   broadcast :: Event -> m ()
   default broadcast :: (MonadEvent m1, MonadTrans t, t m1 ~ m) => Event -> m ()
   broadcast = lift . broadcast
 
 instance (MonadIO m, HasChannel e (BChan Event)) => MonadEvent (ReaderT e m) where
+  askChannel = view channel
   broadcast e = do
     chan <- view channel
     liftIO $ BC.writeBChan chan e

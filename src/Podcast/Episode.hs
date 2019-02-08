@@ -15,7 +15,8 @@ module Podcast.Episode
   , episodeTitle
   , episodeUrl
   , codecType
-  , downloadProgress
+  , progress
+  , action
   , episodeDescription
   , descriptionHidden
   , parseEpisode
@@ -24,8 +25,10 @@ module Podcast.Episode
   ) where
 
 import Control.Lens
+import Control.Monad.Reader
 import Control.Monad.Trans.Resource
 import Control.Monad.IO.Class
+import Control.Monad.IO.Unlift
 import UnliftIO.Async
 import UnliftIO.IO as UIO
 
@@ -83,7 +86,8 @@ parseEpisode nm item = Episode
   , _episodeDescription = item ^. itemDescriptionL
   , _descriptionHidden = True
   , _codecType = item ^?! itemEnclosureL . enclosureTypeL
-  , _downloadProgress = 0
+  , _progress = 0
+  , _action = Download
   }
 
 downloadEpisode :: (MonadThrow m, MonadResource m, MonadUnliftIO m, MonadEvent m, MonadConfig m) => Episode -> m ()
@@ -91,8 +95,6 @@ downloadEpisode e = UIO.withFile "/dev/null" WriteMode $ \devNull -> do
   req <- parseRequest $ e ^. episodeUrl . to T.unpack
   let fname = (e ^. episodeTitle . to T.unpack) ++ ".mp3"
   out <- fmap (</> fname) $ askConfig outputDir
-  notify $ "Ouput: " ++ out
-  -- let watchDir = "/run/user/1000/gvfs/mtp:host=091e_4bac_0000ed275b2f/Primary/Podcasts"
   let cmd = proc "ffmpeg"
         ["-i", "-"
         , "-acodec", "mp3"
@@ -109,11 +111,13 @@ downloadEpisode e = UIO.withFile "/dev/null" WriteMode $ \devNull -> do
     Concurrently (runConduit $ ffmpegOut .| sinkSystemTempFile fname >>= (\tmp -> gMoveFile tmp out)) *>
     Concurrently (void $ waitForStreamingProcess handle)
     where
-      gMoveFile :: (MonadIO m) => FilePath -> FilePath -> m ()
+      gMoveFile :: (MonadIO m, MonadEvent m) => FilePath -> FilePath -> m ()
       gMoveFile i o = do
         fi <- GIO.fileNewForPath i
         fo <- GIO.fileNewForPath o
-        GIO.fileMove fi fo [GIO.FileCopyFlagsOverwrite] GIO.noCancellable Nothing
+        chan <- askChannel
+        let broadcastMoveProgress c t = BC.writeBChan chan $ ProgressEvent Move (e ^. episodeTitle) $ (realToFrac c) / (realToFrac t)
+        GIO.fileMove fi fo [GIO.FileCopyFlagsOverwrite] GIO.noCancellable (Just broadcastMoveProgress)
 
       updateProgress res = do
         let (Just cl) = fmap (read . B.unpack) $ lookup hContentLength (getResponseHeaders res)
@@ -123,19 +127,20 @@ downloadEpisode e = UIO.withFile "/dev/null" WriteMode $ \devNull -> do
               Just chunk -> do
                   let len = realToFrac $ B.length chunk
                   total <- liftIO $ readIORef tref
-                  broadcast $ DownloadEvent (e ^. episodeTitle) ((total + len)/cl)
+                  broadcast $ ProgressEvent Download (e ^. episodeTitle) ((total + len)/cl)
                   liftIO $ writeIORef tref (total + len)
                   yield chunk
                   loop
         getResponseBody res .| loop
 
-renderEpisode :: Bool -> Episode -> Widget ()
+renderEpisode :: Bool -> Episode -> Widget Name
 renderEpisode sel e =
-  let progress =
-        if (e ^. downloadProgress == 0)
+  let act = case e ^. action of Download -> txt " downloading: "; Move -> txt " moving: "
+      pr =
+        if (e ^. progress == 0)
         then str ""
-        else str $ " " ++ (show ((e ^. downloadProgress) * 100)) ++ "%"
-      rendered = padLeft (T.Pad 4) $ (txt $ e ^. episodeTitle) <+> progress
+        else act <+> (str $ (show ((e ^. progress) * 100)) ++ "%")
+      rendered = padLeft (T.Pad 4) $ (txt $ e ^. episodeTitle) <+> pr
       desc =
         if (e ^. descriptionHidden)
         then rendered

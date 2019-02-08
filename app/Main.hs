@@ -13,6 +13,7 @@ import Data.Vector (Vector)
 import qualified Data.Vector as Vec
 
 import Control.Lens
+import Control.Lens.Unsound (lensProduct)
 import Control.Concurrent
 import Control.Monad.Reader
 import Control.Monad.IO.Class
@@ -93,11 +94,11 @@ handleDownload s = do
 appEvent :: AppState -> BrickEvent Name Event -> EventM Name (T.Next AppState)
 appEvent s = \case
     AppEvent (NotificationEvent n) -> M.continue $ s & notification .~ n
-    AppEvent (DownloadEvent ttl pct) ->
+    AppEvent (ProgressEvent act ttl pct) ->
       M.continue $ s
         & feeds . L.listElementsL . each
         . _EpisodeEntry . filtered (views episodeTitle (== ttl))
-        . downloadProgress .~ pct
+        . lensProduct action progress .~ (act, pct)
     VtyEvent (V.EvKey V.KEsc []) -> M.halt s
     VtyEvent (V.EvKey (V.KChar 'd') []) -> do
       handleDownload s

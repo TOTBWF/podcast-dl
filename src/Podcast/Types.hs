@@ -15,7 +15,8 @@ module Podcast.Types
   , episodeTitle
   , episodeUrl
   , codecType
-  , downloadProgress
+  , progress
+  , action
   , episodeDescription
   , descriptionHidden
   , Feed(..)
@@ -25,6 +26,7 @@ module Podcast.Types
   , Entry(..)
   , _FeedEntry
   , _EpisodeEntry
+  , Action(..)
   , Event(..)
   , Config(..)
   , outputDir
@@ -46,6 +48,7 @@ import qualified Brick.BChan as BC
 import qualified Brick.Widgets.List as L
 
 type Name = ()
+data Action = Download | Move
 
 data Episode = Episode
   { _showName :: Text
@@ -54,9 +57,9 @@ data Episode = Episode
   , _episodeDescription :: Text
   , _descriptionHidden :: Bool
   , _codecType :: Text
-  , _downloadProgress :: Float
+  , _action :: Action
+  , _progress :: Float
   }
-  deriving (Show)
 
 makeLenses ''Episode
 
@@ -74,8 +77,9 @@ data Entry
 
 makePrisms ''Entry
 
+
 data Event
-  = DownloadEvent Text Float
+  = ProgressEvent Action Text Float
   | NotificationEvent String
 
 data Config = Config
