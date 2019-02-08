@@ -38,7 +38,7 @@ packages:
 # using the same syntax as the packages field.
 # (e.g., acme-missiles-0.3)
 extra-deps:
-  - rss-conduit-0.4.3.0
+  - rss-conduit-0.4.3.1
   - atom-conduit-0.5.0.3
   - config-ini-0.2.4.0
   - data-clist-0.1.2.2

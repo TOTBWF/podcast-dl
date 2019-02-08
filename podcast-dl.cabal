@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 1693e12045a9676068ec0782f266e181ccc6fa3c88661761b4c7a764e85972cd
+-- hash: 3647bfde7aecdf406d0a96dbc101236776c816ef03fd5e67afbd9c12230586b8
 
 name:           podcast-dl
 version:        0.1.0.0
@@ -27,10 +27,14 @@ source-repository head
 
 library
   exposed-modules:
-      Entry
-      Episode
-      Lib
-      RSSFeeds
+      Brick.Widgets.HTML
+      Podcast.AppState
+      Podcast.Config
+      Podcast.Entry
+      Podcast.Episode
+      Podcast.Event
+      Podcast.Feed
+      Podcast.Types
   other-modules:
       Paths_podcast_dl
   hs-source-dirs:
@@ -42,7 +46,10 @@ library
     , bytestring >=0.10 && <0.11
     , conduit >=1 && <2
     , conduit-extra >=1 && <2
+    , directory >=1 && <2
+    , filepath >=1 && <2
     , http-conduit >=2 && <3
+    , http-types >=0.12 && <0.13
     , lens >=4 && <5
     , mtl >=2 && <3
     , process >=1 && <2
@@ -51,16 +58,17 @@ library
     , text >=1 && <2
     , transformers >=0.5 && <0.6
     , unliftio >=0.2 && <0.3
+    , unliftio-core >=0.1 && <0.2
     , uri-bytestring >=0.3 && <0.4
     , vector >=0.12 && <0.13
     , vty >=5 && <6
     , xml-conduit >=1 && <2
+    , yaml >=0.11 && <0.12
   default-language: Haskell2010
 
 executable podcast-dl-exe
   main-is: Main.hs
   other-modules:
-      Widget.Tree
       Paths_podcast_dl
   hs-source-dirs:
       app
@@ -72,7 +80,10 @@ executable podcast-dl-exe
     , bytestring >=0.10 && <0.11
     , conduit >=1 && <2
     , conduit-extra >=1 && <2
+    , directory >=1 && <2
+    , filepath >=1 && <2
     , http-conduit >=2 && <3
+    , http-types >=0.12 && <0.13
     , lens >=4 && <5
     , mtl >=2 && <3
     , podcast-dl
@@ -82,10 +93,12 @@ executable podcast-dl-exe
     , text >=1 && <2
     , transformers >=0.5 && <0.6
     , unliftio >=0.2 && <0.3
+    , unliftio-core >=0.1 && <0.2
     , uri-bytestring >=0.3 && <0.4
     , vector >=0.12 && <0.13
     , vty >=5 && <6
     , xml-conduit >=1 && <2
+    , yaml >=0.11 && <0.12
   default-language: Haskell2010
 
 test-suite podcast-dl-test
@@ -103,7 +116,10 @@ test-suite podcast-dl-test
     , bytestring >=0.10 && <0.11
     , conduit >=1 && <2
     , conduit-extra >=1 && <2
+    , directory >=1 && <2
+    , filepath >=1 && <2
     , http-conduit >=2 && <3
+    , http-types >=0.12 && <0.13
     , lens >=4 && <5
     , mtl >=2 && <3
     , podcast-dl
@@ -113,8 +129,10 @@ test-suite podcast-dl-test
     , text >=1 && <2
     , transformers >=0.5 && <0.6
     , unliftio >=0.2 && <0.3
+    , unliftio-core >=0.1 && <0.2
     , uri-bytestring >=0.3 && <0.4
     , vector >=0.12 && <0.13
     , vty >=5 && <6
     , xml-conduit >=1 && <2
+    , yaml >=0.11 && <0.12
   default-language: Haskell2010

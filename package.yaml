@@ -31,12 +31,17 @@ dependencies:
 - rss-conduit >= 0.4 && < 0.5
 - bytestring >= 0.10 && < 0.11
 - uri-bytestring >= 0.3 && < 0.4
+- http-types >= 0.12 && < 0.13
 - text >= 1 && < 2
 - process >= 1 && < 2
+- directory >= 1 && < 2
+- filepath >= 1 && < 2
 - unliftio >= 0.2 && < 0.3
+- unliftio-core >= 0.1 && < 0.2
 - async >= 2 && < 3
 - resourcet >= 1 && < 2
 - vector >= 0.12 && < 0.13
+- yaml >= 0.11 && < 0.12
 - vty >= 5 && < 6
 - brick >= 0.46 && < 0.50
 
