@@ -47,6 +47,9 @@ import Text.RSS.Types
 
 import Network.HTTP.Types (hContentLength)
 import Network.HTTP.Simple
+import qualified GI.Gio.Interfaces.File as GIO
+import qualified GI.Gio.Objects.Cancellable as GIO
+import qualified GI.Gio.Flags as GIO (FileCopyFlags(..))
 import System.IO
 import System.Directory
 import System.FilePath.Posix
@@ -86,9 +89,10 @@ parseEpisode nm item = Episode
 downloadEpisode :: (MonadThrow m, MonadResource m, MonadUnliftIO m, MonadEvent m, MonadConfig m) => Episode -> m ()
 downloadEpisode e = UIO.withFile "/dev/null" WriteMode $ \devNull -> do
   req <- parseRequest $ e ^. episodeUrl . to T.unpack
-  out <- askConfig outputDir
+  let fname = (e ^. episodeTitle . to T.unpack) ++ ".mp3"
+  out <- fmap (</> fname) $ askConfig outputDir
+  notify $ "Ouput: " ++ out
   -- let watchDir = "/run/user/1000/gvfs/mtp:host=091e_4bac_0000ed275b2f/Primary/Podcasts"
-  let output = (e ^. episodeTitle . to T.unpack) ++ ".mp3"
   let cmd = proc "ffmpeg"
         ["-i", "-"
         , "-acodec", "mp3"
@@ -102,9 +106,15 @@ downloadEpisode e = UIO.withFile "/dev/null" WriteMode $ \devNull -> do
   ((ffmpegIn, close), ffmpegOut, UseProvidedHandle, handle) <- streamingProcess $ cmd { std_err = UseHandle devNull }
   runConcurrently $
     Concurrently (runConduit $ httpSource req updateProgress .| ffmpegIn >> close) *>
-    Concurrently (runConduit $ ffmpegOut .| sinkSystemTempFile output >>= (\p -> liftIO $ copyFile p (out </> p))) *>
+    Concurrently (runConduit $ ffmpegOut .| sinkSystemTempFile fname >>= (\tmp -> gMoveFile tmp out)) *>
     Concurrently (void $ waitForStreamingProcess handle)
     where
+      gMoveFile :: (MonadIO m) => FilePath -> FilePath -> m ()
+      gMoveFile i o = do
+        fi <- GIO.fileNewForPath i
+        fo <- GIO.fileNewForPath o
+        GIO.fileMove fi fo [GIO.FileCopyFlagsOverwrite] GIO.noCancellable Nothing
+
       updateProgress res = do
         let (Just cl) = fmap (read . B.unpack) $ lookup hContentLength (getResponseHeaders res)
         tref <- liftIO $ newIORef 0
