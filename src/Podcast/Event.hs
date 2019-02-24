@@ -21,6 +21,8 @@ import Control.Monad.Trans
 
 import Data.Conduit
 
+import Data.Text (Text)
+
 import Brick.BChan (BChan)
 import qualified Brick.BChan as BC
 
@@ -43,5 +45,5 @@ instance (MonadIO m, HasChannel e (BChan Event)) => MonadEvent (ReaderT e m) whe
 
 instance (MonadEvent m) => MonadEvent (ConduitT i o m)
 
-notify :: (MonadEvent m) => String -> m ()
+notify :: (MonadEvent m) => Text -> m ()
 notify = broadcast . NotificationEvent

@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 953f05a44e8b878755a8319c9c0d2c9163263c2a2c83c5c41d32681d2ef131fe
+-- hash: ab4680f9bf8294ea985a7add588f9984e60f3ca660b6357acc84221a967cb930
 
 name:           podcast-dl
 version:        0.1.0.0
@@ -28,6 +28,8 @@ source-repository head
 library
   exposed-modules:
       Brick.Widgets.HTML
+      Brick.Widgets.List.Extensions
+      Data.Conduit.GIO
       Podcast.AppState
       Podcast.Config
       Podcast.Entry
@@ -49,6 +51,8 @@ library
     , directory >=1 && <2
     , filepath >=1 && <2
     , gi-gio >=2 && <3
+    , gi-glib >=2 && <3
+    , gi-gobject >=2 && <3
     , http-conduit >=2 && <3
     , http-types >=0.12 && <0.13
     , lens >=4 && <5
@@ -67,7 +71,7 @@ library
     , yaml >=0.11 && <0.12
   default-language: Haskell2010
 
-executable podcast-dl-exe
+executable podcast-dl
   main-is: Main.hs
   other-modules:
       Paths_podcast_dl
@@ -84,6 +88,8 @@ executable podcast-dl-exe
     , directory >=1 && <2
     , filepath >=1 && <2
     , gi-gio >=2 && <3
+    , gi-glib >=2 && <3
+    , gi-gobject >=2 && <3
     , http-conduit >=2 && <3
     , http-types >=0.12 && <0.13
     , lens >=4 && <5
@@ -121,6 +127,8 @@ test-suite podcast-dl-test
     , directory >=1 && <2
     , filepath >=1 && <2
     , gi-gio >=2 && <3
+    , gi-glib >=2 && <3
+    , gi-gobject >=2 && <3
     , http-conduit >=2 && <3
     , http-types >=0.12 && <0.13
     , lens >=4 && <5

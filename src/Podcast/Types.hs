@@ -4,6 +4,7 @@
 -- License     :  BSD-style
 -- Maintainer  :  reedmullanix@gmail.com
 --
+{-# LANGUAGE StrictData #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
@@ -16,17 +17,19 @@ module Podcast.Types
   , episodeUrl
   , codecType
   , progress
-  , action
   , episodeDescription
   , descriptionHidden
+  , Progress(..)
+  , _NotStarted
+  , _InProgress
+  , _Complete
   , Feed(..)
   , feedTitle
-  , episodesHidden
-  , episodes
+  , feedCollapsed
+  , feedEpisodes
   , Entry(..)
   , _FeedEntry
   , _EpisodeEntry
-  , Action(..)
   , Event(..)
   , Config(..)
   , outputDir
@@ -48,7 +51,6 @@ import qualified Brick.BChan as BC
 import qualified Brick.Widgets.List as L
 
 type Name = ()
-data Action = Download | Move
 
 data Episode = Episode
   { _showName :: Text
@@ -57,16 +59,19 @@ data Episode = Episode
   , _episodeDescription :: Text
   , _descriptionHidden :: Bool
   , _codecType :: Text
-  , _action :: Action
-  , _progress :: Float
+  , _progress :: Progress
   }
+
+data Progress = NotStarted | InProgress Char | Complete
+
+makePrisms ''Progress
 
 makeLenses ''Episode
 
 data Feed = Feed
   { _feedTitle :: Text
-  , _episodesHidden :: Bool
-  , _episodes :: Vector Episode
+  , _feedCollapsed :: Bool
+  , _feedEpisodes :: Vector Episode
   }
 
 makeLenses ''Feed
@@ -77,10 +82,10 @@ data Entry
 
 makePrisms ''Entry
 
-
 data Event
-  = ProgressEvent Action Text Float
-  | NotificationEvent String
+  = CompletionEvent Text
+  | NotificationEvent Text
+  | TickEvent
 
 data Config = Config
   { _outputDir :: FilePath
@@ -91,7 +96,7 @@ makeLenses ''Config
 data AppState = AppState
   { _appStateFeeds :: L.List Name Entry
   , _appStateChannel :: BC.BChan Event
-  , _appStateNotification :: String
+  , _appStateNotification :: Text
   , _appStateConfig :: Config
   }
 

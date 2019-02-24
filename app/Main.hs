@@ -1,5 +1,6 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE KindSignatures #-}
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -19,6 +20,8 @@ import Control.Monad.Reader
 import Control.Monad.IO.Class
 import Control.Monad.Trans.Resource
 
+import Data.Conduit.GIO
+
 import Text.RSS.Lens
 import Text.RSS.Types
 import qualified Data.Text as T
@@ -30,6 +33,7 @@ import qualified Brick.BChan as BC
 import qualified Brick.Widgets.Border as B
 import qualified Brick.Widgets.Center as C
 import qualified Brick.Widgets.List as L
+import qualified Brick.Widgets.List.Extensions as L
 import qualified Brick.Types as T
 import Brick.Types
   ( Widget
@@ -40,6 +44,7 @@ import Brick.Widgets.Core
   ( (<+>)
   , (<=>)
   , str
+  , txt
   , vLimit
   , hLimit
   , padLeft
@@ -63,46 +68,44 @@ import Podcast.Episode
 drawUI :: AppState -> [Widget Name]
 drawUI s = [ui]
   where
-    ui = B.borderWithLabel (str $ "[" ++ (s ^. notification) ++ "]") $ L.renderList renderEntry True (s ^. feeds)
+    ui = B.borderWithLabel (txt $ "[" <> (s ^. notification) <> "]") $ L.renderList renderEntry True (s ^. feeds)
 
 toggleEpisodes :: Int -> Feed -> L.List Name Entry -> L.List Name Entry
 toggleEpisodes i f l =
-  case (f ^. episodesHidden) of
-    True -> foldr (L.listInsert (i + 1) . EpisodeEntry) l (f ^. episodes)
-    False -> foldr (\_ l -> L.listRemove (i + 1) l) l (f ^. episodes)
+  case (f ^. feedCollapsed) of
+    True -> foldr (L.listInsert (i + 1) . EpisodeEntry) l (f ^. feedEpisodes)
+    False -> foldr (\_ l -> L.listRemove (i + 1) l) l (f ^. feedEpisodes)
 
 toggleSubItems :: L.List Name Entry -> L.List Name Entry
 toggleSubItems l = do
   case L.listSelectedElement l of
-    Just (i, (FeedEntry f)) -> toggleEpisodes i f l & L.listModify (over (_FeedEntry . episodesHidden) not)
+    Just (i, (FeedEntry f)) -> toggleEpisodes i f l & L.listModify (over (_FeedEntry . feedCollapsed) not)
     Just (i, (EpisodeEntry e)) -> L.listModify (over (_EpisodeEntry . descriptionHidden) not) l
     _ -> l
 
 collapseSubItems :: L.List Name Entry -> L.List Name Entry
 collapseSubItems l = do
   case L.listSelectedElement l of
-    Just (i, (FeedEntry f)) | f ^. episodesHidden == False -> toggleEpisodes i f l & L.listModify (over (_FeedEntry . episodesHidden) not)
+    Just (i, (FeedEntry f)) | f ^. feedCollapsed == False -> toggleEpisodes i f l & L.listModify (over (_FeedEntry . feedCollapsed) not)
     Just (i, (EpisodeEntry e)) -> collapseSubItems (L.listMoveUp l)
     _ -> l
 
 handleDownload :: (MonadIO m) => AppState -> m ()
 handleDownload s = do
-  case L.listSelectedElement (s ^. feeds) of
-    Just (i, (EpisodeEntry e)) -> void $ liftIO $ forkIO $ runResourceT $ runReaderT (downloadEpisode e) s
+  case s ^? feeds . L.listSelectedElementL of
+    Just (EpisodeEntry e) -> void $ liftIO $ forkIO $ runResourceT $ runReaderT (downloadEpisode e) s
     _ -> return ()
 
 appEvent :: AppState -> BrickEvent Name Event -> EventM Name (T.Next AppState)
 appEvent s = \case
+    AppEvent TickEvent -> M.continue $ s & episodes . progress . _InProgress %~ tickProgress
     AppEvent (NotificationEvent n) -> M.continue $ s & notification .~ n
-    AppEvent (ProgressEvent act ttl pct) ->
-      M.continue $ s
-        & feeds . L.listElementsL . each
-        . _EpisodeEntry . filtered (views episodeTitle (== ttl))
-        . lensProduct action progress .~ (act, pct)
+    AppEvent (CompletionEvent ttl) ->
+      M.continue $ s & episodes . filtered (views episodeTitle (== ttl)) . progress .~ Complete
     VtyEvent (V.EvKey V.KEsc []) -> M.halt s
     VtyEvent (V.EvKey (V.KChar 'd') []) -> do
       handleDownload s
-      M.continue s
+      M.continue $ s & feeds . L.listSelectedElementL . _EpisodeEntry . progress .~ (InProgress '⣾')
     VtyEvent (V.EvKey (V.KChar '-') []) -> M.continue $ s & feeds %~ collapseSubItems
     VtyEvent (V.EvKey V.KEnter []) -> M.continue $ s & over feeds toggleSubItems
     (VtyEvent ev) -> do
@@ -113,6 +116,8 @@ attrs :: A.AttrMap
 attrs = A.attrMap V.defAttr
     [ (L.listAttr, fg V.brightBlack)
     , (L.listSelectedAttr, fg V.white)
+    , (episodeInProgressAttr, fg V.yellow)
+    , (episodeCompleteAttr, fg V.green)
     ]
 
 app :: App AppState Event Name
@@ -125,7 +130,12 @@ app = App
   }
 
 main :: IO ()
-main = do
+main = runResourceT $ do
   chan <- liftIO $ BC.newBChan 10
+  liftIO $ putStrLn "Fetching RSS Feeds..."
   s <- initializeState chan
-  void $ M.customMain (V.mkVty V.defaultConfig) (Just chan) app s
+  -- liftIO $ forkIO $ forever $ do
+  --   BC.writeBChan chan TickEvent
+  --   threadDelay 500000
+  runMainLoop
+  liftIO $ void $ M.customMain (V.mkVty V.defaultConfig) (Just chan) app s

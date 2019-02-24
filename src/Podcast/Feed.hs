@@ -9,10 +9,10 @@
 module Podcast.Feed
   ( Feed(..)
   , feedTitle
-  , episodesHidden
-  , episodes
-  , renderFeed
+  , feedCollapsed
+  , feedEpisodes
   , downloadFeed
+  , renderFeed
   ) where
 
 import Control.Lens
@@ -49,8 +49,8 @@ toVecOf l = foldrOf l Vec.cons Vec.empty
 parseFeed :: RssDocument '[] -> Feed
 parseFeed doc = Feed
   { _feedTitle = doc ^. channelTitleL
-  , _episodesHidden = True
-  , _episodes = toVecOf (channelItemsL . to (parseEpisode (doc ^. channelTitleL))) doc
+  , _feedCollapsed = True
+  , _feedEpisodes = toVecOf (channelItemsL . to (parseEpisode (doc ^. channelTitleL))) doc
   }
 
 downloadFeed :: (MonadThrow m, MonadResource m) => String -> m Feed
@@ -63,7 +63,7 @@ downloadFeed url = do
 
 renderFeed :: Bool -> Feed -> Widget ()
 renderFeed sel f =
-  let rendered = if f ^. episodesHidden
+  let rendered = if f ^. feedCollapsed
         then (txt $ "+ " <> (f ^. feedTitle))
         else (txt $ "- " <> (f ^. feedTitle))
   in if sel then withAttr L.listSelectedAttr rendered else rendered
