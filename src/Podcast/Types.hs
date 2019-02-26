@@ -6,6 +6,13 @@
 --
 {-# LANGUAGE StrictData #-}
 {-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE DeriveAnyClass #-}
+{-# LANGUAGE DataKinds #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE FunctionalDependencies #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE TemplateHaskell #-}
@@ -42,10 +49,16 @@ module Podcast.Types
   ) where
 
 import Control.Lens
+import Control.DeepSeq
+
+import GHC.Generics
 
 import Data.Vector (Vector)
 import qualified Data.Vector as Vec
 import Data.Text (Text)
+
+import URI.ByteString
+import Text.RSS.Types
 
 import qualified Brick.BChan as BC
 import qualified Brick.Widgets.List as L
@@ -61,8 +74,12 @@ data Episode = Episode
   , _codecType :: Text
   , _progress :: Progress
   }
+  deriving stock (Generic)
+  deriving anyclass (NFData)
 
-data Progress = NotStarted | InProgress Char | Complete
+data Progress = NotStarted | InProgress | Complete
+  deriving stock (Generic)
+  deriving anyclass (NFData)
 
 makePrisms ''Progress
 
@@ -73,6 +90,8 @@ data Feed = Feed
   , _feedCollapsed :: Bool
   , _feedEpisodes :: Vector Episode
   }
+  deriving stock (Generic)
+  -- deriving anyclass (NFData)
 
 makeLenses ''Feed
 
@@ -101,3 +120,36 @@ data AppState = AppState
   }
 
 makeFields ''AppState
+
+instance NFData Scheme
+instance NFData Host
+instance NFData Port
+instance NFData UserInfo
+instance NFData Authority
+instance NFData Query
+
+instance NFData (URIRef a) where
+  rnf u@URI{} = (uriScheme u) `deepseq` (uriAuthority u) `deepseq` (uriPath u) `deepseq` (uriFragment u) `deepseq` ()
+  rnf u@RelativeRef{} = (rrAuthority u) `deepseq` (rrPath u) `deepseq` (rrQuery u) `deepseq` (rrFragment u) `deepseq` ()
+
+instance NFData RssURI where
+  rnf (RssURI u) = rnf u
+
+instance NFData RssCategory
+instance NFData RssEnclosure
+instance NFData RssSource
+instance NFData RssGuid
+instance NFData CloudProtocol
+instance NFData RssCloud
+instance NFData RssImage
+instance NFData RssTextInput
+instance NFData Hour
+instance NFData Day
+
+instance NFData (RssItemExtensions '[]) where
+  rnf _ = ()
+instance NFData (RssChannelExtensions '[]) where
+  rnf _ = ()
+
+instance NFData (RssItem '[])
+instance NFData (RssDocument '[])

@@ -4,6 +4,8 @@
 -- License     :  BSD-style
 -- Maintainer  :  reedmullanix@gmail.com
 --
+{-# LANGUAGE ViewPatterns #-}
+{-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE OverloadedStrings #-}
 module Podcast.Feed
@@ -17,6 +19,7 @@ module Podcast.Feed
 
 import Control.Lens
 import Control.Monad.Trans.Resource
+import qualified Control.DeepSeq as Seq
 
 import Data.Conduit
 import Data.Conduit.Combinators
@@ -43,8 +46,8 @@ import Brick.Widgets.Core
 import Podcast.Types
 import Podcast.Episode
 
-toVecOf :: (Getting (Endo (Vector a))) s a -> s -> Vector a
-toVecOf l = foldrOf l Vec.cons Vec.empty
+toVecOf :: (Getting (Dual (Endo (Endo (Vector a))))) s a -> s -> Vector a
+toVecOf l = foldrOf' l Vec.cons Vec.empty
 
 parseFeed :: RssDocument '[] -> Feed
 parseFeed doc = Feed
@@ -58,7 +61,7 @@ downloadFeed url = do
   req <- parseRequest url
   rss <- runConduit $ httpSource req getResponseBody .| parseBytes def .| rssDocument
   case rss of
-    Just rss -> return $ parseFeed rss
+    Just (Seq.force -> !rss) -> return $ parseFeed rss
     Nothing -> fail "Unspecified RSS Parse Failure!"
 
 renderFeed :: Bool -> Feed -> Widget ()

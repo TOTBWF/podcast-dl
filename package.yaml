@@ -47,6 +47,7 @@ dependencies:
 - gi-glib >= 2 && < 3
 - vty >= 5 && < 6
 - brick >= 0.46 && < 0.50
+- deepseq >= 1 && < 2
 
 library:
   source-dirs: src

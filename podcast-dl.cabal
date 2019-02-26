@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: ab4680f9bf8294ea985a7add588f9984e60f3ca660b6357acc84221a967cb930
+-- hash: 2bfeb45f69256dda9075cf57ff9255e93d468528cc247dc52316ef81ceba30c7
 
 name:           podcast-dl
 version:        0.1.0.0
@@ -48,6 +48,7 @@ library
     , bytestring >=0.10 && <0.11
     , conduit >=1 && <2
     , conduit-extra >=1 && <2
+    , deepseq >=1 && <2
     , directory >=1 && <2
     , filepath >=1 && <2
     , gi-gio >=2 && <3
@@ -85,6 +86,7 @@ executable podcast-dl
     , bytestring >=0.10 && <0.11
     , conduit >=1 && <2
     , conduit-extra >=1 && <2
+    , deepseq >=1 && <2
     , directory >=1 && <2
     , filepath >=1 && <2
     , gi-gio >=2 && <3
@@ -124,6 +126,7 @@ test-suite podcast-dl-test
     , bytestring >=0.10 && <0.11
     , conduit >=1 && <2
     , conduit-extra >=1 && <2
+    , deepseq >=1 && <2
     , directory >=1 && <2
     , filepath >=1 && <2
     , gi-gio >=2 && <3

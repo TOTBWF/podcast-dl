@@ -24,7 +24,6 @@ module Podcast.Episode
   , renderEpisode
   , episodeInProgressAttr
   , episodeCompleteAttr
-  , tickProgress
   ) where
 
 import Control.Lens
@@ -102,7 +101,7 @@ downloadEpisode e = UIO.withFile "/dev/null" WriteMode $ \devNull -> do
   ((ffmpegIn, close), ffmpegOut, UseProvidedHandle, handle) <- streamingProcess $ cmd { std_err = UseHandle devNull }
   runConcurrently $
     Concurrently (runConduit $ httpSource req getResponseBody .| ffmpegIn >> close) *>
-    Concurrently (runConduit $ ffmpegOut .| GIO.sinkFile fname >> (broadcast $ CompletionEvent $ e ^. episodeTitle)) *>
+    Concurrently (runConduit $ ffmpegOut .| GIO.sinkFile out >> (broadcast $ CompletionEvent $ e ^. episodeTitle)) *>
     Concurrently (void $ waitForStreamingProcess handle)
     where
       cmd = proc "ffmpeg"
@@ -132,16 +131,5 @@ renderEpisode sel e =
 
 renderProgress :: Progress -> Widget Name
 renderProgress NotStarted = txt ""
-renderProgress (InProgress c) = withAttr episodeInProgressAttr $ txt $ T.singleton c
+renderProgress InProgress = withAttr episodeInProgressAttr $ txt "⇩"
 renderProgress Complete = withAttr episodeCompleteAttr $ txt "✓"
-
-tickProgress :: Char -> Char
-tickProgress '⣾' = '⣽'
-tickProgress '⣽' = '⣻'
-tickProgress '⣻' = '⢿'
-tickProgress '⢿' = '⡿'
-tickProgress '⡿' = '⣟'
-tickProgress '⣟' = '⣯'
-tickProgress '⣯' = '⣷'
-tickProgress '⣷' = '⣾'
-tickProgress p = p

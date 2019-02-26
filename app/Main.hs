@@ -98,14 +98,13 @@ handleDownload s = do
 
 appEvent :: AppState -> BrickEvent Name Event -> EventM Name (T.Next AppState)
 appEvent s = \case
-    AppEvent TickEvent -> M.continue $ s & episodes . progress . _InProgress %~ tickProgress
     AppEvent (NotificationEvent n) -> M.continue $ s & notification .~ n
     AppEvent (CompletionEvent ttl) ->
       M.continue $ s & episodes . filtered (views episodeTitle (== ttl)) . progress .~ Complete
     VtyEvent (V.EvKey V.KEsc []) -> M.halt s
     VtyEvent (V.EvKey (V.KChar 'd') []) -> do
       handleDownload s
-      M.continue $ s & feeds . L.listSelectedElementL . _EpisodeEntry . progress .~ (InProgress '⣾')
+      M.continue $ s & feeds . L.listSelectedElementL . _EpisodeEntry . progress .~ InProgress
     VtyEvent (V.EvKey (V.KChar '-') []) -> M.continue $ s & feeds %~ collapseSubItems
     VtyEvent (V.EvKey V.KEnter []) -> M.continue $ s & over feeds toggleSubItems
     (VtyEvent ev) -> do
@@ -134,8 +133,5 @@ main = runResourceT $ do
   chan <- liftIO $ BC.newBChan 10
   liftIO $ putStrLn "Fetching RSS Feeds..."
   s <- initializeState chan
-  -- liftIO $ forkIO $ forever $ do
-  --   BC.writeBChan chan TickEvent
-  --   threadDelay 500000
   runMainLoop
   liftIO $ void $ M.customMain (V.mkVty V.defaultConfig) (Just chan) app s
